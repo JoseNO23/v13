@@ -1,0 +1,8 @@
+{
+  "name": "@storiesv13/web",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "node web-dev.mjs" },
+  "dependencies": {}
+}
+

@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+.DS_Store
+apps/**/.env
+apps/**/.env.*
+pnpm-lock.yaml
+
+.idea
+.vscode/*
+!.vscode/extensions.json
+.sync/
+.syncignore
+apps/**/.syncignore
