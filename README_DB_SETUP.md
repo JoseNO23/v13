@@ -1,23 +1,38 @@
-# storiesV13 · Configuración BD (Neon + Prisma)
+# storiesV13 · Base de datos Neon + Prisma
 
-Este proyecto se considera PRODUCCIÓN desde el inicio (Neon con SSL).
+El entorno se ejecuta directamente sobre **Neon PostgreSQL** (instancia `v13_stories-horror`) con SSL obligatorio. El objetivo es producción temprana: cada cambio debe preservar datos.
 
-## Requisitos
-- Node 18+ y pnpm 9
-- Cuenta Neon (free tier)
-- macOS o Windows (Resilio Sync opcional)
+## Flujo diario en cada máquina (macOS o Windows)
 
-## Pasos
-1. `pnpm install`
-2. `pnpm run setup:env` → pega tu DATABASE_URL real de Neon (ejemplo completo):
-   `postgresql://USUARIO:CONTRASENA@ep-abc12345.us-east-1.aws.neon.tech/neondb?sslmode=require`
-3. `pnpm run db:check` → prueba conexión
-4. `pnpm run db:deploy` → aplica migraciones (NO borra datos)
+1. `pnpm run setup:machine` – prepara `node_modules` según la plataforma y registra el SO actual.
+2. `pnpm run env:verify` – confirma que `apps/api/.env` sigue sincronizado (mismo SHA en ambas máquinas).
+3. `pnpm run db:status` – revisa si hay migraciones pendientes contra Neon.
+4. `pnpm run db:gen` – regenera Prisma Client con el schema actual.
 
-## Notas de producción
-- NO usar `prisma migrate reset` ni `--force`.
-- SSL obligatorio en la URL (?sslmode=require).
-- Para estado/backup:
-  - Estado de migraciones: `pnpm run db:status`
-  - Snapshot manual: `pnpm --filter @storiesv13/api prisma db pull`
-- macOS/Windows: evita rutas absolutas. Resilio puede sincronizar el repo; no compartas `.env`.
+> **Nunca** uses `prisma migrate reset` en este proyecto: borra datos productivos.
+
+## Conexión estándar
+
+```
+DATABASE_URL="postgresql://neondb_owner:npg_mHpd49CJRTeN@ep-frosty-boat-ac6v5ufu-pooler.sa-east-1.aws.neon.tech/v13_stories-horror?sslmode=require&channel_binding=require"
+```
+
+Resilio sincroniza este `.env` entre máquinas, pero continúa ignorado por git.
+
+## Migraciones y Neon
+
+- Para agregar nuevos modelos o columnas:
+  1. Modifica `apps/api/prisma/schema.prisma`.
+  2. Ejecuta **una sola vez** (preferiblemente en la máquina principal):
+     - `pnpm --filter @storiesv13/api run prisma:dev --name <descripcion>`
+  3. Sincroniza la migración generada con Resilio.
+  4. En cada máquina (incluida producción temprana):
+     - `pnpm run db:deploy`
+     - `pnpm run db:status`
+- Prisma Client debe regenerarse con `pnpm run db:gen` siempre que cambie el schema.
+
+## Buenas prácticas
+
+- Conexión siempre cifrada (`sslmode=require` y `channel_binding=require`).
+- No modificar manualmente las tablas en Neon; cualquier cambio pasa por Prisma.
+- Respeta el orden de scripts multiplataforma para evitar `node_modules` corruptos.

@@ -2,6 +2,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Nota: Este schema es válido para Prisma 6.18.0
+// El warning sobre 'url' es un falso positivo de la extensión VS Code que valida con Prisma 7
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -14,25 +16,29 @@ enum Role {
 }
 
 enum ImageType {
-  thumbnail
-  background
-  inline
+  THUMBNAIL
+  BACKGROUND
+  INLINE
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  role         Role     @default(USER)
-  profileImage String?
-  stories      Story[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  role            Role     @default(USER)
+  emailVerifiedAt DateTime?
+  googleId        String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stories         Story[]
+  emailTokens     EmailVerificationToken[]
+  passwordTokens  PasswordResetToken[]
 }
 
 model Category {
-  id          String  @id @default(cuid())
-  name        String  @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
   stories     Story[]
 }
@@ -41,20 +47,45 @@ model Story {
   id         String       @id @default(cuid())
   title      String
   content    String
-  author     User         @relation(fields: [authorId], references: [id])
   authorId   String
-  category   Category?    @relation(fields: [categoryId], references: [id])
   categoryId String?
-  images     StoryImage[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+
+  author     User         @relation(fields: [authorId], references: [id])
+  category   Category?    @relation(fields: [categoryId], references: [id])
+  images     StoryImage[]
 }
 
 model StoryImage {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   url       String
   type      ImageType
-  story     Story     @relation(fields: [storyId], references: [id])
   storyId   String
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
+
+  story     Story      @relation(fields: [storyId], references: [id])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  code      String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

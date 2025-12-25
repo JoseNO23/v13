@@ -7,14 +7,17 @@
     "packages/*"
   ],
   "devDependencies": {
+    "cross-env": "10.1.0",
     "prisma": "6.18.0"
   },
   "scripts": {
     "setup:env": "node scripts/prepare-env.mjs",
+    "setup:machine": "node scripts/setup-machine.mjs",
+    "setup:store": "node scripts/setup-store.mjs",
+    "env:verify": "node scripts/verify-env.mjs",
     "db:check": "node scripts/check-db.mjs",
-    "db:validate": "pnpm exec prisma validate --schema apps/api/prisma/schema.prisma",
-    "db:deploy": "pnpm exec prisma migrate deploy --schema apps/api/prisma/schema.prisma",
-    "db:gen": "pnpm exec prisma generate --schema apps/api/prisma/schema.prisma",
-    "db:status": "pnpm exec prisma migrate status --schema apps/api/prisma/schema.prisma"
+    "db:deploy": "pnpm --filter @storiesv13/api run prisma:deploy",
+    "db:status": "pnpm --filter @storiesv13/api run prisma:status",
+    "db:gen": "pnpm --filter @storiesv13/api run prisma:generate"
   }
 }
