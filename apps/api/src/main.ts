@@ -17,7 +17,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.set('trust proxy', 1);
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   app.useGlobalPipes(
     new ValidationPipe({
