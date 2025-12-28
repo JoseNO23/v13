@@ -35,13 +35,15 @@ export class AuthService {
   }
 
   private getVerificationLink(token: string) {
-    const baseUrl = process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL;
+    const publicUrl = process.env.APP_PUBLIC_URL;
+    const baseUrl = publicUrl ?? process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL;
     return `${baseUrl}/auth/verify-email?token=${token}`;
   }
 
   private async sendVerificationEmail(params: { email: string; code: string; link: string }) {
     const sendgridKey = process.env.SENDGRID_API_KEY;
     const sendgridFrom = process.env.SENDGRID_FROM;
+    const sendgridTemplateId = process.env.SENDGRID_TEMPLATE_VERIFY_ID;
 
     const subject = 'Verifica tu correo';
     const text = [
@@ -62,6 +64,26 @@ export class AuthService {
     <p>Este codigo vence en 10 minutos.</p>
   </body>
 </html>`;
+
+    if (sendgridKey && sendgridFrom && sendgridTemplateId) {
+      try {
+        sgMail.setApiKey(sendgridKey);
+        await sgMail.send({
+          to: params.email,
+          from: { email: sendgridFrom, name: 'Viernes13' },
+          templateId: sendgridTemplateId,
+          dynamicTemplateData: {
+            code: params.code,
+            link: params.link,
+            minutes: VERIFICATION_TTL_MINUTES,
+          },
+        });
+        return true;
+      } catch (error) {
+        this.logger.error('Error enviando correo de verificacion con SendGrid template.', error);
+        return false;
+      }
+    }
 
     if (sendgridKey && sendgridFrom) {
       try {

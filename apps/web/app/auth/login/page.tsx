@@ -1,10 +1,11 @@
 ﻿'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
+const LOGIN_STORAGE_KEY = 'storiesv13.login.form';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +15,24 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const showVerifyLink = Boolean(error && /verif/i.test(error));
+
+  useEffect(() => {
+    const saved = localStorage.getItem(LOGIN_STORAGE_KEY);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as { email?: string };
+      setEmail(parsed.email ?? '');
+    } catch {
+      localStorage.removeItem(LOGIN_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify({ email }));
+  }, [email]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

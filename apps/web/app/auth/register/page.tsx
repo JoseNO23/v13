@@ -1,8 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
+const REGISTER_STORAGE_KEY = 'storiesv13.register.form';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -16,6 +17,50 @@ export default function RegisterPage() {
   const [enviandoCodigo, setEnviandoCodigo] = useState(false);
   const [registrando, setRegistrando] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(REGISTER_STORAGE_KEY);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as {
+        username?: string;
+        email?: string;
+        verificationCode?: string;
+      };
+      setUsername(parsed.username ?? '');
+      setEmail(parsed.email ?? '');
+      setVerificationCode(parsed.verificationCode ?? '');
+    } catch {
+      localStorage.removeItem(REGISTER_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    const payload = JSON.stringify({ username, email, verificationCode });
+    localStorage.setItem(REGISTER_STORAGE_KEY, payload);
+  }, [username, email, verificationCode]);
+
+  const validatePassword = () => {
+    if (password.length < 8) {
+      setError('La contrasena debe tener al menos 8 caracteres.');
+      return false;
+    }
+
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasLower || !hasUpper || !hasNumber || !hasSymbol) {
+      setError('La contrasena debe incluir mayuscula, minuscula, numero y simbolo.');
+      return false;
+    }
+
+    return true;
+  };
 
   const ensurePasswordsMatch = () => {
     if (password !== confirmPassword) {
@@ -41,6 +86,10 @@ export default function RegisterPage() {
 
     if (!password) {
       setError('La contrasena es obligatoria.');
+      return;
+    }
+
+    if (!validatePassword()) {
       return;
     }
 
@@ -107,6 +156,7 @@ export default function RegisterPage() {
       setConfirmPassword('');
       setVerificationCode('');
       setCodigoEnviado(false);
+      localStorage.removeItem(REGISTER_STORAGE_KEY);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -165,6 +215,8 @@ export default function RegisterPage() {
             type={showPassword ? 'text' : 'password'}
             required
             minLength={8}
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+            title="Minimo 8 caracteres, con mayuscula, minuscula, numero y simbolo."
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
@@ -176,6 +228,8 @@ export default function RegisterPage() {
             type={showPassword ? 'text' : 'password'}
             required
             minLength={8}
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+            title="Minimo 8 caracteres, con mayuscula, minuscula, numero y simbolo."
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
