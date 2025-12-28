@@ -9,5 +9,9 @@ export class AppController {
   status() {
     return this.appService.getStatus();
   }
-}
 
+  @Get('api/health')
+  health() {
+    return this.appService.getStatus();
+  }
+}
