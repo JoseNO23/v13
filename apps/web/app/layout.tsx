@@ -16,10 +16,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <header style={{ padding: '1rem 2rem' }}>
           <nav style={{ display: 'flex', gap: '1rem' }}>
             <span style={{ fontWeight: 700 }}>storiesV13</span>
-            {!authToken && (
+            {!authToken ? (
               <>
                 <a href="/auth/register">Registro</a>
                 <a href="/auth/login">Login</a>
+              </>
+            ) : (
+              <>
+                <a href="/stories">Historias</a>
+                <a href="/settings">Configuracion</a>
               </>
             )}
           </nav>
