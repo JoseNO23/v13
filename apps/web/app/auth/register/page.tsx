@@ -130,7 +130,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!verificationCode.trim()) {
+    const trimmedCode = verificationCode.trim().replace(/\s+/g, '');
+    if (!trimmedCode) {
       setError('Ingresa el codigo de verificacion.');
       return;
     }
@@ -140,7 +141,7 @@ export default function RegisterPage() {
       const respuesta = await fetch(`${API_BASE}/auth/verify-email-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: verificationCode }),
+        body: JSON.stringify({ email, code: trimmedCode }),
       });
 
       const data = await respuesta.json().catch(() => ({}));
@@ -249,7 +250,7 @@ export default function RegisterPage() {
             type="text"
             required
             value={verificationCode}
-            onChange={(event) => setVerificationCode(event.target.value)}
+            onChange={(event) => setVerificationCode(event.target.value.replace(/\s+/g, ''))}
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
           />
         </label>
