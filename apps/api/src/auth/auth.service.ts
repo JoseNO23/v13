@@ -14,10 +14,10 @@ import type { JwtPayload } from 'jsonwebtoken';
 import * as nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
 import { PrismaService } from '../prisma/prisma.service';
+import { JWT_SECRET } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
-const JWT_SECRET = 'storiesv13-dev-secret';
 const VERIFICATION_TTL_MINUTES = 10;
 const VERIFICATION_CODE_LENGTH = 6;
 const DEFAULT_API_BASE_URL = 'http://localhost:4000';
@@ -115,10 +115,17 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
+    const rawUsername = dto.username.trim();
+    const username = rawUsername.toLowerCase();
 
-    const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      throw new ConflictException('El correo ya est? registrado.');
+    const existingByEmail = await this.prisma.user.findUnique({ where: { email } });
+    if (existingByEmail) {
+      throw new ConflictException('El correo ya esta registrado.');
+    }
+
+    const existingByUsername = await this.prisma.user.findUnique({ where: { username } });
+    if (existingByUsername) {
+      throw new ConflictException('El nombre de usuario ya esta en uso.');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -131,6 +138,8 @@ export class AuthService {
         data: {
           email,
           passwordHash,
+          username,
+          displayName: rawUsername,
           role: Role.USER,
         },
       });
@@ -141,6 +150,12 @@ export class AuthService {
           code: codeValue,
           userId: user.id,
           expiresAt,
+        },
+      });
+
+      await tx.userPrivacy.create({
+        data: {
+          userId: user.id,
         },
       });
 
@@ -256,6 +271,11 @@ export class AuthService {
     if (!user.emailVerifiedAt) {
       throw new UnauthorizedException('Debes verificar tu correo electr?nico antes de iniciar sesi?n.');
     }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
     const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });

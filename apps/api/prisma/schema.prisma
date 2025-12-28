@@ -15,6 +15,11 @@ enum Role {
   USER
 }
 
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 enum ImageType {
   THUMBNAIL
   BACKGROUND
@@ -25,8 +30,22 @@ model User {
   id              String   @id @default(cuid())
   email           String   @unique
   passwordHash    String
+  username        String?  @unique
+  displayName     String?
   role            Role     @default(USER)
+  bio             String?
+  avatarKey       String?
+  bannerKey       String?
+  websiteUrl      String?
+  discordTag      String?
+  twitterUrl      String?
+  instagramUrl    String?
+  language        String   @default("es")
+  theme           String   @default("dark")
   emailVerifiedAt DateTime?
+  isBanned        Boolean  @default(false)
+  bannedReason    String?
+  lastLoginAt     DateTime?
   googleId        String?  @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -34,6 +53,24 @@ model User {
   stories         Story[]
   emailTokens     EmailVerificationToken[]
   passwordTokens  PasswordResetToken[]
+  privacy         UserPrivacy?
+}
+
+model UserPrivacy {
+  userId            String            @id
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileVisibility ProfileVisibility @default(PUBLIC)
+  showBio           Boolean           @default(true)
+  showWebsite       Boolean           @default(true)
+  showDiscord       Boolean           @default(false)
+  showTwitter       Boolean           @default(true)
+  showInstagram     Boolean           @default(true)
+  showEmail         Boolean           @default(false)
+  showCreatedAt     Boolean           @default(true)
+  showFavorites     Boolean           @default(false)
+  showStats         Boolean           @default(true)
+  showLastSeen      Boolean           @default(false)
+  allowDMs          Boolean           @default(false)
 }
 
 model Category {
