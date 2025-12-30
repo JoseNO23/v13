@@ -1,11 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
-const REGISTER_STORAGE_KEY = 'storiesv13.register.form';
+const REGISTER_EMAILS_KEY = 'storiesv13.register.emails';
+const REGISTER_USERNAMES_KEY = 'storiesv13.register.usernames';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,31 +20,39 @@ export default function RegisterPage() {
   const [enviandoCodigo, setEnviandoCodigo] = useState(false);
   const [registrando, setRegistrando] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [emailHistory, setEmailHistory] = useState<string[]>([]);
+  const [usernameHistory, setUsernameHistory] = useState<string[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(REGISTER_STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
     try {
-      const parsed = JSON.parse(saved) as {
-        username?: string;
-        email?: string;
-        verificationCode?: string;
-      };
-      setUsername(parsed.username ?? '');
-      setEmail(parsed.email ?? '');
-      setVerificationCode(parsed.verificationCode ?? '');
+      const savedEmails = localStorage.getItem(REGISTER_EMAILS_KEY);
+      const savedUsernames = localStorage.getItem(REGISTER_USERNAMES_KEY);
+      if (savedEmails) {
+        setEmailHistory(JSON.parse(savedEmails));
+      }
+      if (savedUsernames) {
+        setUsernameHistory(JSON.parse(savedUsernames));
+      }
     } catch {
-      localStorage.removeItem(REGISTER_STORAGE_KEY);
+      localStorage.removeItem(REGISTER_EMAILS_KEY);
+      localStorage.removeItem(REGISTER_USERNAMES_KEY);
     }
   }, []);
 
-  useEffect(() => {
-    const payload = JSON.stringify({ username, email, verificationCode });
-    localStorage.setItem(REGISTER_STORAGE_KEY, payload);
-  }, [username, email, verificationCode]);
+  const storeRecentValue = (
+    key: string,
+    value: string,
+    setter: (values: string[]) => void,
+    current: string[],
+  ) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+    const next = [trimmed, ...current.filter((item) => item !== trimmed)].slice(0, 6);
+    setter(next);
+    localStorage.setItem(key, JSON.stringify(next));
+  };
 
   const validatePassword = () => {
     if (password.length < 8) {
@@ -111,6 +122,8 @@ export default function RegisterPage() {
         throw new Error(data?.message ?? data?.mensaje ?? 'No se pudo enviar el codigo.');
       }
 
+      storeRecentValue(REGISTER_EMAILS_KEY, email, setEmailHistory, emailHistory);
+      storeRecentValue(REGISTER_USERNAMES_KEY, username, setUsernameHistory, usernameHistory);
       setCodigoEnviado(true);
       setMensaje(data?.mensaje ?? 'Codigo enviado. Revisa tu correo.');
     } catch (err) {
@@ -157,7 +170,7 @@ export default function RegisterPage() {
       setConfirmPassword('');
       setVerificationCode('');
       setCodigoEnviado(false);
-      localStorage.removeItem(REGISTER_STORAGE_KEY);
+      router.push('/auth/login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -179,9 +192,15 @@ export default function RegisterPage() {
             required
             value={username}
             onChange={(event) => setUsername(event.target.value)}
+            list="register-usernames"
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
           />
         </label>
+        <datalist id="register-usernames">
+          {usernameHistory.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
         <label style={{ display: 'grid', gap: '0.5rem' }}>
           <span>Correo</span>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem' }}>
@@ -190,6 +209,7 @@ export default function RegisterPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              list="register-emails"
               style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
             />
             <button
@@ -210,6 +230,11 @@ export default function RegisterPage() {
             </button>
           </div>
         </label>
+        <datalist id="register-emails">
+          {emailHistory.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
         <label style={{ display: 'grid', gap: '0.5rem' }}>
           <span>Contrasena</span>
           <input

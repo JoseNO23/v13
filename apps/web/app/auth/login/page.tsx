@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
-const LOGIN_STORAGE_KEY = 'storiesv13.login.form';
+const LOGIN_EMAILS_KEY = 'storiesv13.login.emails';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,24 +15,28 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const showVerifyLink = Boolean(error && /verif/i.test(error));
+  const [emailHistory, setEmailHistory] = useState<string[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(LOGIN_STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
     try {
-      const parsed = JSON.parse(saved) as { email?: string };
-      setEmail(parsed.email ?? '');
+      const savedEmails = localStorage.getItem(LOGIN_EMAILS_KEY);
+      if (savedEmails) {
+        setEmailHistory(JSON.parse(savedEmails));
+      }
     } catch {
-      localStorage.removeItem(LOGIN_STORAGE_KEY);
+      localStorage.removeItem(LOGIN_EMAILS_KEY);
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify({ email }));
-  }, [email]);
+  const storeRecentEmail = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+    const next = [trimmed, ...emailHistory.filter((item) => item !== trimmed)].slice(0, 6);
+    setEmailHistory(next);
+    localStorage.setItem(LOGIN_EMAILS_KEY, JSON.stringify(next));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -55,6 +59,7 @@ export default function LoginPage() {
       }
 
       setMensaje(data?.mensaje ?? 'Inicio de sesión exitoso.');
+      storeRecentEmail(email);
       router.push('/stories');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
@@ -77,9 +82,15 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            list="login-emails"
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155' }}
           />
         </label>
+        <datalist id="login-emails">
+          {emailHistory.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
         <label style={{ display: 'grid', gap: '0.5rem' }}>
           <span>Contraseña</span>
           <input

@@ -30,9 +30,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </nav>
         </header>
         <main>{children}</main>
-        <footer style={{ textAlign: 'center', padding: '1rem', fontSize: '0.875rem' }}>
-          Backend: http://localhost:4000
-        </footer>
       </body>
     </html>
   );
