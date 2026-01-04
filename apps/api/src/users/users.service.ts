@@ -124,6 +124,7 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email,
+      role: user.role,
       username: user.username,
       displayName: user.displayName,
       bio: user.bio,

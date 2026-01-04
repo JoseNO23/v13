@@ -37,4 +37,16 @@ export class AuthController {
     });
     return { mensaje: result.mensaje, expiraEn: result.expiraEn };
   }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.cookie('auth_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+    return { mensaje: 'Sesion cerrada' };
+  }
 }

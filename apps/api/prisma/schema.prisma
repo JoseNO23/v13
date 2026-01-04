@@ -10,9 +10,14 @@ datasource db {
 }
 
 enum Role {
-  ADMIN
-  AUTHOR
+  GUEST
   USER
+  CREATOR
+  COLLABORATOR
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+  OWNER
 }
 
 enum ProfileVisibility {
@@ -54,6 +59,7 @@ model User {
   emailTokens     EmailVerificationToken[]
   passwordTokens  PasswordResetToken[]
   privacy         UserPrivacy?
+  updatedSiteSettings SiteSettings[] @relation("UserSiteSettingsUpdates")
 }
 
 model UserPrivacy {
@@ -77,7 +83,25 @@ model Category {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  stories     Story[]
+  groupId     String?
+  group       CategoryGroup? @relation(fields: [groupId], references: [id])
+  stories     StoryCategory[]
+  primaryStories Story[] @relation("PrimaryCategory")
+}
+
+model CategoryGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  order       Int?
+  categories  Category[]
+}
+
+model Genre {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  stories     StoryGenre[]
 }
 
 model Story {
@@ -90,8 +114,30 @@ model Story {
   updatedAt  DateTime     @updatedAt
 
   author     User         @relation(fields: [authorId], references: [id])
-  category   Category?    @relation(fields: [categoryId], references: [id])
+  category   Category?    @relation("PrimaryCategory", fields: [categoryId], references: [id])
+  genres     StoryGenre[]
+  categories StoryCategory[]
   images     StoryImage[]
+}
+
+model StoryGenre {
+  storyId String
+  genreId String
+
+  story   Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, genreId])
+}
+
+model StoryCategory {
+  storyId    String
+  categoryId String
+
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, categoryId])
 }
 
 model StoryImage {
@@ -125,4 +171,14 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SiteSettings {
+  id          String   @id @default("default")
+  logoKey     String?
+  logoUrl     String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  updatedBy   User?    @relation("UserSiteSettingsUpdates", fields: [updatedById], references: [id])
 }
