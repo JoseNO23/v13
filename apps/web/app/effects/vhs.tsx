@@ -313,7 +313,7 @@ export function VHSOverlay({
               top: 'calc(var(--vhs-hud-top, 8px) + var(--vhs-hud-inset, 8px))',
             }}
           >
-            PLAY >
+            PLAY {'>'}
             {showRec && <span style={{ marginLeft: '12px', animation: 'rec-blink 1.5s infinite' }}>REC</span>}
           </div>
 
