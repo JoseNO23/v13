@@ -51,26 +51,59 @@ export function VHSFilter({
 
     let timeout: number;
     let lastBurst = 0;
+    let rafId = 0;
+    const rateTuning = { boost: 1, meanWait: 2200 };
+
+    const tuneByRefreshRate = () => {
+      let samples = 0;
+      let acc = 0;
+      let last = performance.now();
+
+      const measure = (t: number) => {
+        if (samples > 0) {
+          acc += t - last;
+        }
+        last = t;
+        samples += 1;
+
+        if (samples < 60) {
+          rafId = window.requestAnimationFrame(measure);
+          return;
+        }
+
+        const avg = acc / Math.max(1, samples - 1);
+        const fps = 1000 / avg;
+        if (fps >= 90) {
+          rateTuning.boost = 1.35;
+          rateTuning.meanWait = 1700;
+        }
+      };
+
+      rafId = window.requestAnimationFrame(measure);
+    };
+
+    tuneByRefreshRate();
 
     const burst = () => {
       const now = Date.now();
       if (now - lastBurst < 100) return;
       lastBurst = now;
 
-      const dx = Math.min(4, (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 3) * intensity);
+      const boost = rateTuning.boost;
+      const dx = Math.min(5, (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 3.2) * intensity * boost);
       offR?.setAttribute('dx', `${dx}`);
       offB?.setAttribute('dx', `${-dx}`);
 
       noise?.setAttribute('seed', String(Math.floor(Math.random() * 9999)));
 
-      const bf1 = (0.003 * (0.7 + Math.random() * 0.8) * intensity).toFixed(4);
-      const bf2 = (0.28 * (0.7 + Math.random() * 0.8) * intensity).toFixed(3);
+      const bf1 = (0.003 * (0.7 + Math.random() * 0.8) * intensity * boost).toFixed(4);
+      const bf2 = (0.28 * (0.7 + Math.random() * 0.8) * intensity * boost).toFixed(3);
       noise?.setAttribute('baseFrequency', `${bf1} ${bf2}`);
 
-      const scale = Math.min(30, 10 * intensity + Math.random() * 20 * intensity);
+      const scale = Math.min(35, 10 * intensity * boost + Math.random() * 20 * intensity * boost);
       disp?.setAttribute('scale', `${scale.toFixed(1)}`);
 
-      const duration = 80 + Math.random() * 180;
+      const duration = 90 + Math.random() * 200 * boost;
       window.setTimeout(() => {
         offR?.setAttribute('dx', '0');
         offB?.setAttribute('dx', '0');
@@ -84,13 +117,14 @@ export function VHSFilter({
       timeout = window.setTimeout(() => {
         burst();
         loop();
-      }, expWait(2200));
+      }, expWait(rateTuning.meanWait));
     };
 
     loop();
 
     return () => {
       clearTimeout(timeout);
+      window.cancelAnimationFrame(rafId);
       if (applyToTargets) {
         targets.forEach((el) => {
           el.style.filter = '';
@@ -313,7 +347,7 @@ export function VHSOverlay({
               top: 'calc(var(--vhs-hud-top, 8px) + var(--vhs-hud-inset, 8px))',
             }}
           >
-            PLAY {'>'}
+            PLAY ▶
             {showRec && <span style={{ marginLeft: '12px', animation: 'rec-blink 1.5s infinite' }}>REC</span>}
           </div>
 
@@ -327,7 +361,9 @@ export function VHSOverlay({
             }}
           >
             <div>{date}</div>
-            <div>{meridiem} {time}</div>
+            <div>
+              {meridiem} {time}
+            </div>
           </div>
 
           <div
