@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 type Role = 'GUEST' | 'USER' | 'CREATOR' | 'COLLABORATOR' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN' | 'OWNER';
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
 const THEME_STORAGE_KEY = 'theme-preference';
 
 const ROLE_LABELS: Record<Role, string> = {

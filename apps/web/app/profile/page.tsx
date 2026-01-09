@@ -7,7 +7,7 @@ import {
   BookOpen, Heart, Users, TrendingUp, Award
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
 
 type Privacy = {
   profileVisibility: string;
